@@ -1,0 +1,221 @@
+---
+title: "Untitled"
+author: "Zehra Hacioglu, Arzum Gursoy, Omer Sen, Olgun Aslan"
+date: "23 01 2021"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+KAGGLE VERİLERİNİN KEŞFİ
+
+Bu proje ile 2017 yılı Kaggle Veri Bilimi Anket sonuçları ile profosyonellerin günlük yaşantılarında kullanmış oldukları dil ve yöntemlerin keşfedilmesi amaçlanmıştır. Paket içeriği 5 ayrı dosyadan oluşmaktadır. Bu projede kullanılan dosya anket sonuçlarının bulunduğu rawMCData veri setidir. Veri seti 16.716 satır ve 228 sütundan oluşmaktadır. Her bir sütun katılımcıların sorulan sorulara verdikleri cevapları içermektedir.
+
+İlk Adım: kullanılacak paketler ve veri setinin yüklenmesi.
+
+```{r,message=FALSE,warning=FALSE}
+library(readr)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r, message=FALSE, warning=FALSE}
+rawMCData <- read.csv("C:/Users/Zehra/Desktop/multipleChoiceResponses.csv", stringsAsFactors = T, header = T)
+attach(rawMCData)
+```
+
+
+```{r,message=FALSE,warning=FALSE}
+head(rawMCData, n = 5)
+```
+
+Kullanılacak olan veri setinin ilk 10 kullanıcıya ait verileri yukarıda gözükmektedir. Katılımcılara ait bazı bilgilerin grafik ve tabloları aşağıda verilmektedir.
+
+İlk olarak katılımcıların yaşlarını gösteren bir histogram çizilsin.
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(rawMCData, aes(Age, fill = Age)) +
+  geom_histogram() +
+  xlab("Yaş") +
+  ylab("Katılımcıların Sayısı")
+```
+
+```{r,message=FALSE,warning=FALSE}
+median(Age, na.rm = TRUE)
+```
+
+Histogram grifiğine göre katılımcıların yaş aralığı en çok 20-30 aralığındadır.
+
+Aşağıda ki fonksiyon istenilen değişken için özet bilgileri veren bir fonksiyondur. Bu fonksiyon ile ilgili değişkenin her bir faktörü için yüzdelik ve miktar hesaplamaları gerçekleştirilecektir.
+
+
+```{r,message=FALSE,warning=FALSE}
+chooseOne = function(question, filteredData = rawMCData){
+  
+  filteredData %>% 
+    filter(!UQ(sym(question)) == "") %>% 
+    group_by_(question) %>% 
+    summarise(count = n()) %>% 
+    mutate(percent = (count / sum(count)) * 100) %>% 
+    arrange(desc(count))
+  
+}
+```
+
+```{r,message=FALSE,warning=FALSE}
+gender <- chooseOne("GenderSelect")
+gender
+```
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(chooseOne("GenderSelect"),aes(x = reorder(GenderSelect, count), y = count)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 10,
+                                   vjust = 0.5,
+                                   hjust = 1))+
+  xlab("Cinsiyetler")+
+  ylab("Katılımcıların Sayısı")
+```
+
+İstatistikler ve grafik sonuçlarına göre rawMCData veri setinin %81,8 kadar büyük kısmını erkek katılımcılar oluşturmaktadır.
+
+
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(chooseOne("Country"),aes(x = reorder(Country, count), y = count)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90,
+                                   vjust = 0.5,
+                                   hjust = 1))+
+  xlab("Ülkeler")
+```
+```{r,message=FALSE,warning=FALSE}
+head(chooseOne("Country") , n = 5)
+```
+
+Yukarıdaki grafik katılımcıların yaşadıkları ülkelerin artan sıraya göre grafiğini göstermektedir. Katılımcıların en çok katılım gösterdikleri ilk 5 ülke %25.2 oranında Birleşik Devletler, %16.2 oranında Hindistan, %6.1 oranında diğer ülkeler, %3.4 oranında Rusya ve son olarak %3.2 oranında Birleşik Krallık olacak şekilde bir sıralamaya sahiptir. 
+
+En çok katılımın gerçekleştiği 5 ülke filtrelenerek ve yeni bir veri setine atansın ve bu yeni veri seti ile en çok katılımın sağlandığı 5 ülkenin yaş aralıkları grafik ile gösterilsin.
+
+```{r,message=FALSE,warning=FALSE}
+newData <- rawMCData%>%
+  filter(Country == c("United States","India","Other","Russia","United Kingdom"))
+```
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(newData, aes(x = Age, fill = Country)) +
+  geom_density() +
+  facet_wrap(~Country) +
+  ylab("Kullanıcıların Yaş Aralıkları")
+```
+
+Yaş aralığı en geniş olan grafik Birşekik Devletler'e aitken Hindistan diğer ülkelere kıyasla daha dar ve genç bir aralığa sahiptir. Bunların yanı sıra yaş aralığının en çok ABD ve Rusya'da olduğu görülmektedir.
+
+Katılımcıların çalışma durumları nedir?
+
+```{r,message=FALSE,warning=FALSE}
+chooseOne("EmploymentStatus")
+```
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(chooseOne("EmploymentStatus"), aes(x = reorder(EmploymentStatus,count), y = count))+
+  geom_bar(stat = "identity")+
+  theme(axis.text.x = element_text(angle = 20,
+                                   vjust = 0.6)) +
+  xlab("Çalışma Drumları") 
+```
+Ankete katılanların %65'i tam zamanlı bir işte çalışmaktadır, %12.6'sı çalışmıyor fakat iş arıyor. Genel olarak katılımcıların %78.5'si çalışıyor, %18.3'i çalışmıyor, %2.5'i çalışma durumunu belirtmek istemiyor ve %0.7'si ise emeklidir.
+
+Çalışma durumu ile yaş değişkenleri arasındaki ilişki kontrolünün yapılması.Katılımcıların çalışma durumları "EmploymentStatus" kolonunda yer almaktadır.
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(rawMCData, aes(x = Age, fill = EmploymentStatus)) +
+  geom_density() +
+  facet_wrap(~EmploymentStatus)+
+  xlab("Yaşlar") +
+  ylab("Kullanıcıların Yaşlarına Göre Çalışma Durumları")
+```
+
+Anketörler, çalışma durumlarını "çalışmıyorum fakat iş arıyorum", "çalışmıyorum ve iş aramıyorum" ve "çalışma durumumu belirtmek istemiyorum" olarak cevaplayan katılımcılara yüksek dereceli bir okulda okuyup okumadıklarını sordu.Katılımcıların bu soruya verdikleri cevaplar "StudentStatus" kolonunda yer almaktadır. Verilen cevaplara göre katılımcıların eğitim seviyeleri belirlenecektir.
+
+```{r,message=FALSE,warning=FALSE}
+chooseOne("StudentStatus")
+```
+
+İstatistikler ankete katılanların %76.64'ünün yüksek dereceli bir okulda eğitim aldıklarını söylemektedir.
+
+Katılımcılara veri bilimi becerilerini geliştirmeye odaklı olup olmadıkları sorulmuştur.
+
+```{r,message=FALSE,warning=FALSE}
+chooseOne("LearningDataScience")
+```
+Katılımcıların %62'si veri bilimi becerilerini geliştirmeye odaklandıklarını söylemektedir.
+
+Anketörlerin, ne kadar süredir veri bilimi ile ilgilendikleri sorusuna katılımcıların vermiş oldukları cevaplar aşağıdaki gibir.
+
+```{r,message=FALSE,warning=FALSE}
+lds_time <- chooseOne("LearningDataScienceTime")
+lds_time
+```
+```{r,message=FALSE,warning=FALSE}
+ggplot(chooseOne("LearningDataScienceTime"),aes(x = reorder(LearningDataScienceTime, count), y = count)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 20,
+                                   vjust = 1,
+                                   hjust = 1))
+```
+
+İstatistikler, katılımcıların %84 gibi büyük bir çoğunluğunun 2 yıldan kısa bir süredir veri bilimi ile ilgilendiklerini göstermektedir.
+
+Katılımcılara mesleklerinin ne olduğu sorulmaktadır
+
+```{r,message=FALSE,warning=FALSE}
+chooseOne("EmploymentStatus")
+
+```
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(chooseOne("EmploymentStatus"),aes(x = reorder(EmploymentStatus, count), y = count)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 20,
+                                   vjust = 1,
+                                   hjust = 1))
+```
+
+Katılımcıların %20.5' i Veri Bilimci, %14.8'i Yazılım Mühendisi, %10.4'ü farklı meslek sahibi, %10.2'si Veri Analisti olduklarını söylemektedirler. Kaggle kullanıcılarının yaklaşık% 45'i Veri Bilimciler, Yazılım Geliştiriciler / Mühendisler veya Veri Analistleridir.
+
+Bu ankete katılım sağlayanlara günlük hayatta kullanmış oldukları araçların neler olduğu sorulmuştur.
+
+```{r,message=FALSE,warning=FALSE}
+head(chooseOne("HardwarePersonalProjectsSelect"), n = 5)
+```
+
+Yukarıdaki tablo katılımcıların günlük hayatlarında kullandıkları araçları göstermektedir. Kullanıcıların %40.7'si dizüstü bilgisayar(Macbook), %10.1'i oyun bilgisayarı, %7.4'ü dizüstü bilgisayar ve bulut hizmeti, %7.2'si iş istasyonu (teknik) bilgisayarı, %6.3'ü dizüstü veya iş istasyonu ve yerel BT destekli sunucuları kullandıklarını söylediler. Genel olarak çoğunluğun %40.7 oranında dizüstü bilgisayar kullandıkları saptanmıştır.
+
+```{r,message=FALSE,warning=FALSE}
+chooseOne("LanguageRecommendationSelect")
+```
+
+```{r,message=FALSE,warning=FALSE}
+ggplot(chooseOne("LanguageRecommendationSelect"),aes(x = reorder(LanguageRecommendationSelect, count), y = count)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90,
+                                   vjust = 0.5,
+                                   hjust = 1))+
+  xlab("Katılımcıların Kullandıkları Diller")
+```
+Görüldüğü üzere katılımcıların %63 gibi büyük bir kısmı veri analizleri sırasında Python'ı tercih ediyor. R ise %24 kullanım oranıyla Python'dan sonra en çok tercih edilen dil oluyor. 
+
+Sonuç olarak istatistiklere göre kullanıcıların en çok kullandıkları araç  %40.7 oranıyla dizüstü bilgisayar(Macbook) ve en çok kullandıkları dil %63 oranıyla Python oluyor.
+
+
+
+
+
+
+
